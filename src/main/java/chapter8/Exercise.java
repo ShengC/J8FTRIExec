@@ -2,6 +2,12 @@ package chapter8;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -9,6 +15,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.LinkedList;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
@@ -95,12 +102,25 @@ public class Exercise {
 	public static Stream<Path> findTransientAndVolatile(Path root) throws IOException {
 		return Files.walk(root, FileVisitOption.FOLLOW_LINKS).filter(path -> { 
 			try { 
-				return Files.lines(path).anyMatch(line -> line.indexOf("volatile") >= 0 || line.indexOf("transient") >= 0); 
+				return Files.lines(path).anyMatch(line -> { return line.indexOf("volatile") >= 0 || line.indexOf("transient") >= 0; }); 
 			}
 			catch (IOException e) {
 				return false;
 			}
 		});
+	}
+	
+	public static String[] getContent(URL url, String user, String password) throws IOException {
+		String encoded = Base64.getEncoder().encodeToString(String.format("%s:%s", user, password).getBytes(StandardCharsets.UTF_8));
+		URLConnection connection = url.openConnection();
+		connection.connect();
+		connection.setRequestProperty("Authorization", "Basic " + encoded);
+		try (
+			InputStream stream = connection.getInputStream();
+			BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+		) {
+			return reader.lines().toArray(String[]::new);
+		}
 	}
 	
 	public static void main(String... args) {
